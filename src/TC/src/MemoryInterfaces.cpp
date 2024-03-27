@@ -699,16 +699,24 @@ void Surface::Export(Surface& dst, CUcontext ctx, CUstream str, uint32_t roi_x,
   }
 
   for (int i = 0; i < NumPlanes(); i++) {
-    auto plane = dst.GetSurfacePlane(i);
-    /* SurfacePlane dimensions can be both smaller (e. g. yuv420)
-     * and bigger (e. g. rgb) than Surface dimensions, hence convert to float.
-     */
-    auto f_x = (1.f * Width(i)) / (1.f * Width());
-    auto f_y = (1.f * Height(i)) / (1.f * Height());
+    if (PixelFormat() == YUV444) {
+      auto ptr = dst.PlanePtr(i);
+      GetSurfacePlane(i)->Export(ptr, dst.Pitch(), ctx, str,
+                                roi_x, roi_y + Height() * i,
+                                roi_w, roi_h,
+                                pos_x, pos_y);
+    } else {
+      auto plane = dst.GetSurfacePlane(i);
+      /* SurfacePlane dimensions can be both smaller (e. g. yuv420)
+      * and bigger (e. g. rgb) than Surface dimensions, hence convert to float.
+      */
+      auto f_x = (1.f * Width(i)) / (1.f * Width());
+      auto f_y = (1.f * Height(i)) / (1.f * Height());
 
-    GetSurfacePlane(i)->Export(*plane, ctx, str, roi_x * f_x, roi_y * f_y,
-                               roi_w * f_x, roi_h * f_y, pos_x * f_x,
-                               pos_y * f_y);
+      GetSurfacePlane(i)->Export(*plane, ctx, str, roi_x * f_x, roi_y * f_y,
+                                roi_w * f_x, roi_h * f_y, pos_x * f_x,
+                                pos_y * f_y);
+    }
   }
 }
 
